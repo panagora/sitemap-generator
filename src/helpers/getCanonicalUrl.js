@@ -14,6 +14,9 @@ function getCanonicalUrl(html) {
   if (html instanceof Buffer) {
     html = html.toString('utf8');
   }
+  if (typeof html !== 'string') {
+    return null;
+  }
 
   const links = findLinks(html);
   const canonical = links.find(link => link.includes('canonical'));
