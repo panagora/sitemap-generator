@@ -33,6 +33,8 @@ module.exports = function SitemapGenerator(uri, opts) {
     ignore: null
   };
 
+  const addedUrls = new Set();
+
   if (!uri) {
     throw new Error('Requires a valid URL.');
   }
@@ -103,6 +105,10 @@ module.exports = function SitemapGenerator(uri, opts) {
   crawler.on('fetchcomplete', (queueItem, page) => {
     const url = getCanonicalUrl(page) || queueItem.url;
 
+    if (addedUrls.has(url)) {
+      return;
+    }
+
     if (
       (opts.ignore && opts.ignore(url)) ||
       /(<meta(?=[^>]+noindex).*?>)/.test(page) || // check if robots noindex is present
@@ -111,6 +117,7 @@ module.exports = function SitemapGenerator(uri, opts) {
       emitter.emit('ignore', url);
     } else {
       emitter.emit('add', url);
+      addedUrls.add(url);
 
       if (sitemapPath !== null) {
         // eslint-disable-next-line
