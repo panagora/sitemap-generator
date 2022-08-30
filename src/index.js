@@ -13,6 +13,7 @@ const SitemapRotator = require('./SitemapRotator');
 const createSitemapIndex = require('./createSitemapIndex');
 const extendFilename = require('./helpers/extendFilename');
 const validChangeFreq = require('./helpers/validChangeFreq');
+const getCanonicalUrl = require('./helpers/getCanonicalUrl');
 
 module.exports = function SitemapGenerator(uri, opts) {
   const defaultOpts = {
@@ -31,6 +32,8 @@ module.exports = function SitemapGenerator(uri, opts) {
     ignoreAMP: true,
     ignore: null
   };
+
+  const addedUrls = new Set();
 
   if (!uri) {
     throw new Error('Requires a valid URL.');
@@ -85,7 +88,12 @@ module.exports = function SitemapGenerator(uri, opts) {
 
   crawler.on('fetchclienterror', (queueError, errorData) => {
     if (errorData.code === 'ENOTFOUND') {
-      emitError(404, `Site ${JSON.stringify(queueError)} could not be found. REQUEST: ${JSON.stringify(errorData)}`);
+      emitError(
+        404,
+        `Site ${JSON.stringify(
+          queueError
+        )} could not be found. REQUEST: ${JSON.stringify(errorData)}`
+      );
     } else {
       emitError(400, errorData.message);
     }
@@ -95,7 +103,11 @@ module.exports = function SitemapGenerator(uri, opts) {
 
   // fetch complete event
   crawler.on('fetchcomplete', (queueItem, page) => {
-    const { url, depth } = queueItem;
+    const url = getCanonicalUrl(page) || queueItem.url;
+
+    if (addedUrls.has(url)) {
+      return;
+    }
 
     if (
       (opts.ignore && opts.ignore(url)) ||
@@ -105,11 +117,16 @@ module.exports = function SitemapGenerator(uri, opts) {
       emitter.emit('ignore', url);
     } else {
       emitter.emit('add', url);
+      addedUrls.add(url);
 
       if (sitemapPath !== null) {
         // eslint-disable-next-line
         const lastMod = queueItem.stateData.headers['last-modified'];
-        sitemap.addURL(url, depth, lastMod && format(lastMod, 'YYYY-MM-DD'));
+        sitemap.addURL(
+          url,
+          queueItem.depth,
+          lastMod && format(lastMod, 'YYYY-MM-DD')
+        );
       }
     }
   });
