@@ -15,6 +15,7 @@
     "ecosystem:node"
   ],
   "main": "src/index.js",
+  "types": "src/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/panagora/sitemap-generator.git"
