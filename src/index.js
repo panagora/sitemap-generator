@@ -22,6 +22,7 @@ module.exports = function SitemapGenerator(uri, opts) {
     maxDepth: 0,
     filepath: path.join(process.cwd(), 'sitemap.xml'),
     userAgent: 'Node/SitemapGenerator',
+    respectCanonical: false,
     respectRobotsTxt: true,
     ignoreInvalidSSL: true,
     timeout: 30000,
@@ -103,7 +104,8 @@ module.exports = function SitemapGenerator(uri, opts) {
 
   // fetch complete event
   crawler.on('fetchcomplete', (queueItem, page) => {
-    const url = getCanonicalUrl(page) || queueItem.url;
+    const canonical = options.respectCanonical ? getCanonicalUrl(page) : null;
+    const url = canonical || queueItem.url;
 
     if (addedUrls.has(url)) {
       return;
